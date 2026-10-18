@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="SmartBoard classroom whiteboard notes dashboard. Capture, organize, and download classroom board photos.">
+  <title>SmartBoard — Class Notes</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236d7cff'/%3E%3Cpath d='M20 25h60v42H20zM35 78h30M50 67v11' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" aria-label="SmartBoard home">
+        <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="18" height="13" rx="2"/><path d="M8 21h8M12 16.5V21M7 8h10M7 11h7"/></svg></span>
+        <span><strong>SmartBoard</strong><small>CLASSROOM NOTES</small></span>
+      </a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span> Overview</button>
+        <button class="nav-item" data-view="library"><span class="nav-icon">▤</span> Notes library <span class="nav-count" id="nav-count">0</span></button>
+        <button class="nav-item" data-view="capture"><span class="nav-icon">◎</span> Capture board</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="device-card">
+          <div class="device-top"><span class="device-dot" id="device-dot"></span><span id="device-status">Demo mode</span></div>
+          <strong>Whiteboard camera</strong>
+          <p id="device-description">Connect your ESP32 camera in a future setup step.</p>
+          <button class="text-button" id="device-info">Connection details <span>↗</span></button>
+        </div>
+        <div class="profile"><div class="avatar">SB</div><div><strong>Class workspace</strong><small>Personal library</small></div><span class="profile-dots">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menu-button" aria-label="Toggle menu">☰</button>
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-current">Overview</strong></div>
+        <div class="topbar-actions"><span class="local-badge"><span></span> Saved on this device</span><button class="icon-button" id="help-button" aria-label="Help">?</button></div>
+      </header>
+
+      <section class="page-section" id="overview-view">
+        <div class="welcome-row"><div><div class="eyebrow">YOUR CLASSROOM, ORGANIZED</div><h1>Good to see you.</h1><p class="subheading">Every lesson, captured and ready when you need it.</p></div><button class="primary-button" data-go-capture><span>＋</span> Add board notes</button></div>
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-icon purple">▤</div><div class="stat-label">TOTAL NOTES</div><div class="stat-value" id="stat-total">0</div><div class="stat-foot">Saved board captures</div></article>
+          <article class="stat-card"><div class="stat-icon green">◷</div><div class="stat-label">LATEST CAPTURE</div><div class="stat-value stat-text" id="stat-latest">Not yet</div><div class="stat-foot">Your most recent note</div></article>
+          <article class="stat-card"><div class="stat-icon orange">⌁</div><div class="stat-label">CAMERA STATUS</div><div class="stat-value stat-text" id="stat-camera">Not connected</div><div class="stat-foot">Hardware integration pending</div></article>
+        </div>
+
+        <div class="section-heading"><div><h2>Recent class notes</h2><p>Your latest whiteboard captures in one place.</p></div><button class="quiet-button" data-go-library>View all notes <span>→</span></button></div>
+        <div class="notes-grid" id="recent-grid"></div>
+        <div class="empty-state" id="overview-empty"><div class="empty-art"><span>▤</span><i>＋</i></div><h3>Your notes start here</h3><p>Upload a board photo or use the capture workspace to save your first class note.</p><button class="primary-button" data-go-capture>Capture your first note</button></div>
+
+        <div class="bottom-grid">
+          <article class="tip-card"><div class="tip-icon">✦</div><div><h3>A little tip</h3><p>For clearer notes, keep the camera facing the board straight-on and avoid glare from classroom lights.</p></div></article>
+          <article class="gesture-card"><div class="gesture-symbol">☝</div><div><div class="eyebrow">COMING WITH HARDWARE</div><h3>Three-finger capture</h3><p>Show three fingers to request a single board photo. The buzzer will beep once when capture succeeds.</p><span class="status-pill">Integration pending</span></div></article>
+        </div>
+      </section>
+
+      <section class="page-section hidden" id="library-view">
+        <div class="welcome-row"><div><div class="eyebrow">YOUR COLLECTION</div><h1>Notes library</h1><p class="subheading">Find, preview, and download your saved board photos.</p></div><button class="primary-button" data-go-capture><span>＋</span> Add board notes</button></div>
+        <div class="library-toolbar"><label class="search-box"><span>⌕</span><input type="search" id="search-input" placeholder="Search notes..." aria-label="Search notes"></label><select id="sort-select" aria-label="Sort notes"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Name A–Z</option></select></div>
+        <div class="notes-grid library-grid" id="library-grid"></div>
+        <div class="empty-state hidden" id="library-empty"><div class="empty-art"><span>▤</span><i>⌕</i></div><h3>No matching notes</h3><p>Try another search, or add your first whiteboard picture.</p><button class="secondary-button" id="clear-search">Clear search</button></div>
+      </section>
+
+      <section class="page-section hidden" id="capture-view">
+        <div class="welcome-row"><div><div class="eyebrow">SAVE TODAY'S LESSON</div><h1>Capture board notes</h1><p class="subheading">Add a photo now; ESP32 camera capture will be connected in the hardware stage.</p></div></div>
+        <div class="capture-layout">
+          <div class="capture-main panel">
+            <div class="panel-heading"><div><h2>Board image</h2><p>Upload an image from your computer or phone.</p></div><span class="upload-label">JPG · PNG · WEBP</span></div>
+            <div class="upload-zone" id="upload-zone">
+              <input type="file" id="image-input" accept="image/*" hidden>
+              <div class="upload-illustration"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="7" y="10" width="50" height="36" rx="5"/><circle cx="22" cy="23" r="5"/><path d="m12 40 14-12 9 8 6-5 11 10M23 53h18M32 46v7"/></svg></div>
+              <h3>Drop your board photo here</h3><p>or browse files on your device</p><button class="secondary-button" id="browse-button">Choose image</button><small>Images stay in this browser unless you export them.</small>
+            </div>
+            <div class="image-preview hidden" id="image-preview-wrap"><img id="image-preview" alt="Selected whiteboard preview"><button class="remove-image" id="remove-image" aria-label="Remove selected image">×</button><div class="preview-caption" id="preview-caption"></div></div>
+            <div class="form-grid"><label>Class / subject <input id="note-subject" maxlength="80" placeholder="e.g. Data Structures"></label><label>Note title <input id="note-title" maxlength="100" placeholder="e.g. Binary trees — Lecture 04"></label><label class="full-field">Description (optional) <textarea id="note-description" rows="3" maxlength="500" placeholder="Add a topic, chapter, or reminder..."></textarea></label></div>
+            <div class="capture-actions"><button class="quiet-button" id="reset-form">Reset</button><button class="primary-button" id="save-note" disabled>Save class note <span>→</span></button></div>
+          </div>
+          <aside class="capture-side">
+            <div class="panel side-panel"><div class="side-heading-icon">◎</div><h3>Camera connection</h3><p>The ESP32-CAM is not connected to this dashboard yet. For now, upload a photo to test the note library.</p><div class="connection-line"><span class="device-dot"></span> Waiting for device</div><button class="secondary-button full-width" id="camera-setup-button">View setup notes</button></div>
+            <div class="privacy-note"><span>♧</span><p><strong>Your notes, your control.</strong><br>Photos are stored locally in this browser. Download important notes as a backup.</p></div>
+          </aside>
+        </div>
+      </section>
+
+      <footer class="footer"><span>SmartBoard <span class="footer-dot">•</span> Classroom notes, made simple.</span><span>Prototype dashboard · Free to use</span></footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="modal-backdrop hidden" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal"><button class="modal-close" id="modal-close" aria-label="Close dialog">×</button><div class="modal-icon" id="modal-icon">▤</div><h2 id="modal-title">Note preview</h2><div id="modal-body"></div><div class="modal-actions" id="modal-actions"></div></div></div>
+</body>
+</html>
