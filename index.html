@@ -8,6 +8,7 @@
   <title>SmartBoard — Class Notes</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236d7cff'/%3E%3Cpath d='M20 25h60v42H20zM35 78h30M50 67v11' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -67,21 +68,40 @@
       </section>
 
       <section class="page-section hidden" id="capture-view">
-        <div class="welcome-row"><div><div class="eyebrow">SAVE TODAY'S LESSON</div><h1>Capture board notes</h1><p class="subheading">Add a photo now; ESP32 camera capture will be connected in the hardware stage.</p></div></div>
+        <div class="welcome-row"><div><div class="eyebrow">SAVE TODAY'S LESSON</div><h1>Capture board notes</h1><p class="subheading">Connect the ESP32-CAM, capture automatically with three fingers, or upload a photo manually.</p></div></div>
         <div class="capture-layout">
           <div class="capture-main panel">
             <div class="panel-heading"><div><h2>Board image</h2><p>Upload an image from your computer or phone.</p></div><span class="upload-label">JPG · PNG · WEBP</span></div>
+            <section class="camera-workspace">
+              <div class="camera-toolbar"><div><h3>Live camera</h3><p>ESP32-CAM stream or this device camera</p></div><span class="camera-state" id="camera-state">Camera stopped</span></div>
+              <div class="camera-frame">
+                <video id="camera-video" autoplay muted playsinline class="camera-media hidden"></video>
+                <img id="esp32-stream" class="camera-media hidden" alt="ESP32-CAM live stream">
+                <div class="camera-placeholder" id="camera-placeholder"><span>◎</span><strong>Camera preview</strong><small>Start the camera to view the whiteboard</small></div>
+                <div class="gesture-overlay" id="gesture-overlay">Show and hold 3 fingers to capture</div>
+              </div>
+              <div class="camera-controls">
+                <button class="secondary-button" id="start-webcam">Use device camera</button>
+                <button class="secondary-button" id="capture-live" disabled>Capture photo</button>
+                <button class="quiet-button" id="stop-camera" disabled>Stop camera</button>
+              </div>
+              <div class="esp32-connect">
+                <label for="esp32-url">ESP32-CAM stream URL</label>
+                <div class="esp32-url-row"><input id="esp32-url" type="url" placeholder="http://192.168.1.100/stream"><button class="secondary-button" id="connect-esp32">Connect ESP32</button></div>
+                <small>Use the camera IP shown in Arduino Serial Monitor. The website and ESP32 should be on the same Wi-Fi.</small>
+              </div>
+            </section>
             <div class="upload-zone" id="upload-zone">
               <input type="file" id="image-input" accept="image/*" hidden>
               <div class="upload-illustration"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="7" y="10" width="50" height="36" rx="5"/><circle cx="22" cy="23" r="5"/><path d="m12 40 14-12 9 8 6-5 11 10M23 53h18M32 46v7"/></svg></div>
-              <h3>Drop your board photo here</h3><p>or browse files on your device</p><button class="secondary-button" id="browse-button">Choose image</button><small>Images stay in this browser unless you export them.</small>
+              <h3>Upload a board photo manually</h3><p>or drag and drop an image from your computer or phone</p><button class="secondary-button" id="browse-button">Choose image</button><small>Images stay in this browser unless you export them.</small>
             </div>
             <div class="image-preview hidden" id="image-preview-wrap"><img id="image-preview" alt="Selected whiteboard preview"><button class="remove-image" id="remove-image" aria-label="Remove selected image">×</button><div class="preview-caption" id="preview-caption"></div></div>
             <div class="form-grid"><label>Class / subject <input id="note-subject" maxlength="80" placeholder="e.g. Data Structures"></label><label>Note title <input id="note-title" maxlength="100" placeholder="e.g. Binary trees — Lecture 04"></label><label class="full-field">Description (optional) <textarea id="note-description" rows="3" maxlength="500" placeholder="Add a topic, chapter, or reminder..."></textarea></label></div>
             <div class="capture-actions"><button class="quiet-button" id="reset-form">Reset</button><button class="primary-button" id="save-note" disabled>Save class note <span>→</span></button></div>
           </div>
           <aside class="capture-side">
-            <div class="panel side-panel"><div class="side-heading-icon">◎</div><h3>Camera connection</h3><p>The ESP32-CAM is not connected to this dashboard yet. For now, upload a photo to test the note library.</p><div class="connection-line"><span class="device-dot"></span> Waiting for device</div><button class="secondary-button full-width" id="camera-setup-button">View setup notes</button></div>
+            <div class="panel side-panel"><div class="side-heading-icon">◎</div><h3>Camera connection</h3><p>Connect the ESP32-CAM stream above. Three-finger detection runs while the live preview is active. You can also capture manually or upload a saved photo.</p><div class="connection-line"><span class="device-dot" id="camera-device-dot"></span><span id="camera-connection-text">Waiting for camera</span></div><button class="secondary-button full-width" id="camera-setup-button">View setup notes</button></div>
             <div class="privacy-note"><span>♧</span><p><strong>Your notes, your control.</strong><br>Photos are stored locally in this browser. Download important notes as a backup.</p></div>
           </aside>
         </div>
