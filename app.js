@@ -197,14 +197,14 @@
     }
     if (!state.handModel) {
       state.handModel = new Hands({ locateFile: file => "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/" + file });
-      state.handModel.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.65, minTrackingConfidence: 0.65 });
+      state.handModel.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.55, minTrackingConfidence: 0.55 });
       state.handModel.onResults(results => {
         const landmarks = results.multiHandLandmarks?.[0];
         if (fingerCountIsThree(landmarks)) {
           if (!state.gestureStarted) state.gestureStarted = Date.now();
           const held = Date.now() - state.gestureStarted;
           $("#gesture-overlay").textContent = held > 850 ? "Three fingers detected — capturing…" : "Hold three fingers…";
-          if (held > 2000 && Date.now() - state.lastGestureCapture > 5000) {
+          if (held > 800 && Date.now() - state.lastGestureCapture > 3000) {
             state.lastGestureCapture = Date.now();
             state.gestureStarted = 0;
             captureLiveFrame("Three-finger capture", true);
@@ -226,7 +226,7 @@
     state.gestureBusy = true;
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = 640; canvas.height = 480;
+      canvas.width = 320; canvas.height = 240;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
       await state.handModel.send({ image: canvas });
@@ -237,7 +237,7 @@
       }
     } finally {
       state.gestureBusy = false;
-      if (state.gestureLoop) setTimeout(runGestureLoop, 120);
+      if (state.gestureLoop) setTimeout(runGestureLoop, 90);
     }
   }
   function captureLiveFrame(reason = "Manual camera capture", autoSave = false) {
