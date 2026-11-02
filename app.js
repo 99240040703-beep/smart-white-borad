@@ -3,7 +3,7 @@
   const STORAGE_KEY = "smartboard-notes-v1";
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
-  const state = { notes: [], selectedImage: "", toastTimer: null, currentView: "overview", cameraStream: null, cameraKind: "", handModel: null, gestureStarted: 0, lastGestureCapture: 0, gestureLoop: false, gestureBusy: false };
+  const state = { notes: [], selectedImage: "", toastTimer: null, currentView: "overview", cameraStream: null, cameraKind: "", handModel: null, gestureStarted: 0, lastGestureCapture: 0, gestureLoop: false, gestureBusy: false, voiceRecognition: null, voiceActive: false, lastVoiceCapture: 0 };
   const esc = (value = "") => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
   const fmtDate = (value) => {
     const date = new Date(value);
@@ -152,6 +152,79 @@
       toast(error.message || "Invalid camera URL.");
     }
   }
+  function startVoiceCommands() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast("Voice commands are not supported in this browser. Try Google Chrome.");
+      $("#voice-status").textContent = "Voice commands unsupported";
+      return;
+    }
+    if (state.voiceActive) {
+      state.voiceActive = false;
+      if (state.voiceRecognition) state.voiceRecognition.stop();
+      $("#voice-command").textContent = "Start voice commands";
+      $("#voice-status").textContent = "Voice commands off";
+      toast("Voice commands stopped.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    state.voiceRecognition = recognition;
+    recognition.lang = "en-IN";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 3;
+
+    recognition.onstart = () => {
+      state.voiceActive = true;
+      $("#voice-command").textContent = "Stop voice commands";
+      $("#voice-status").textContent = "Listening — say “capture”";
+      toast("Voice commands active. Say capture.");
+    };
+
+    recognition.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (!event.results[i].isFinal) continue;
+        const spoken = Array.from(event.results[i]).map(item => item.transcript).join(" ").toLowerCase().trim();
+        $("#voice-status").textContent = "Heard: " + spoken;
+        const command = /\b(capture|take photo|take a photo|take picture|take a picture|click photo|click picture|screenshot)\b/i.test(spoken);
+        if (command && Date.now() - state.lastVoiceCapture > 2500) {
+          state.lastVoiceCapture = Date.now();
+          if (!state.cameraKind) {
+            toast("Connect the ESP32-CAM or start the device camera first.");
+            $("#voice-status").textContent = "Camera not connected";
+            continue;
+          }
+          captureLiveFrame("Voice command capture", true);
+          $("#voice-status").textContent = "Capture command received";
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      $("#voice-status").textContent = "Voice error: " + event.error;
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        state.voiceActive = false;
+        $("#voice-command").textContent = "Start voice commands";
+      }
+    };
+
+    recognition.onend = () => {
+      if (state.voiceActive) {
+        try { recognition.start(); } catch (error) {}
+      } else {
+        $("#voice-command").textContent = "Start voice commands";
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      state.voiceActive = false;
+      toast("Could not start voice recognition. Allow microphone access and try again.");
+    }
+  }
+
   function stopCamera(showMessage = true) {
     state.gestureLoop = false;
     state.gestureStarted = 0;
@@ -378,6 +451,7 @@
     $("#connect-esp32").addEventListener("click", connectEsp32);
     $("#capture-live").addEventListener("click", () => captureLiveFrame("Manual camera capture"));
     $("#stop-camera").addEventListener("click", () => stopCamera(true));
+    $("#voice-command").addEventListener("click", startVoiceCommands);
     window.addEventListener("beforeunload", () => stopCamera(false));
     $("#image-input").addEventListener("change", event => useImage(event.target.files?.[0]));
     $("#browse-button").addEventListener("click", () => $("#image-input").click());
