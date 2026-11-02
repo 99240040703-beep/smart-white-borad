@@ -192,10 +192,10 @@
           if (!state.gestureStarted) state.gestureStarted = Date.now();
           const held = Date.now() - state.gestureStarted;
           $("#gesture-overlay").textContent = held > 850 ? "Three fingers detected — capturing…" : "Hold three fingers…";
-          if (held > 850 && Date.now() - state.lastGestureCapture > 5000) {
+          if (held > 2000 && Date.now() - state.lastGestureCapture > 5000) {
             state.lastGestureCapture = Date.now();
             state.gestureStarted = 0;
-            captureLiveFrame("Three-finger capture");
+            captureLiveFrame("Three-finger capture", true);
           }
         } else {
           state.gestureStarted = 0;
@@ -228,7 +228,7 @@
       if (state.gestureLoop) setTimeout(runGestureLoop, 120);
     }
   }
-  function captureLiveFrame(reason = "Manual camera capture") {
+  function captureLiveFrame(reason = "Manual camera capture", autoSave = false) {
     const source = currentCameraSource();
     const width = state.cameraKind === "webcam" ? source.videoWidth : source.naturalWidth;
     const height = state.cameraKind === "webcam" ? source.videoHeight : source.naturalHeight;
@@ -247,7 +247,11 @@
       if (!$("#note-title").value.trim()) $("#note-title").value = "Whiteboard capture — " + fmtDate(new Date());
       $("#save-note").disabled = false;
       $("#gesture-overlay").textContent = reason + " ready to save";
-      toast(reason + " completed. Click Save class note to add it to your library.");
+      if (autoSave) {
+        saveNote({ automatic: true });
+      } else {
+        toast(reason + " completed. Click Save class note to add it to your library.");
+      }
     } catch (error) {
       toast("The stream cannot be captured from this page. Check ESP32 CORS and HTTPS restrictions.");
     }
@@ -281,22 +285,24 @@
     reader.onerror = () => toast("Unable to open that image. Please try again.");
     reader.readAsDataURL(file);
   }
-  function saveNote() {
+  function saveNote(options = {}) {
     if (!state.selectedImage) { toast("Choose a board image first."); return; }
+    const automatic = options.automatic === true;
+    const capturedAt = new Date();
     const note = {
       id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2),
-      title: $("#note-title").value.trim() || "Class note — " + fmtDate(new Date()),
-      subject: $("#note-subject").value.trim() || "Class notes",
-      description: $("#note-description").value.trim(),
-      createdAt: new Date().toISOString(),
+      title: $("#note-title").value.trim() || (automatic ? "Whiteboard capture — " : "Class note — ") + fmtDate(capturedAt),
+      subject: $("#note-subject").value.trim() || (automatic ? "Three-finger capture" : "Class notes"),
+      description: $("#note-description").value.trim() || (automatic ? "Automatically captured after holding three fingers for 2 seconds." : ""),
+      createdAt: capturedAt.toISOString(),
       image: state.selectedImage
     };
     state.notes.unshift(note);
     if (!persistNotes()) { state.notes.shift(); return; }
     resetForm();
     renderDashboard();
-    setView("library");
-    toast("Class note saved on this device.");
+    if (!automatic) setView("library");
+    toast(automatic ? "Photo automatically saved to your Notes Library." : "Class note saved on this device.");
   }
   function downloadNote(id) {
     const note = state.notes.find(item => item.id === id);
