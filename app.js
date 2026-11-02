@@ -172,11 +172,23 @@
   }
   function fingerCountIsThree(landmarks) {
     if (!landmarks || landmarks.length < 21) return false;
-    const index = landmarks[8].y < landmarks[6].y;
-    const middle = landmarks[12].y < landmarks[10].y;
-    const ring = landmarks[16].y < landmarks[14].y;
-    const pinky = landmarks[20].y < landmarks[18].y;
-    return index && middle && ring && !pinky;
+
+    // Count the four fingers (thumb is intentionally excluded).
+    // A small margin helps avoid counting a bent finger as extended.
+    const fingers = [
+      [8, 6],   // index tip / PIP
+      [12, 10], // middle tip / PIP
+      [16, 14], // ring tip / PIP
+      [20, 18]  // pinky tip / PIP
+    ];
+
+    let extended = 0;
+    for (const [tip, pip] of fingers) {
+      if (landmarks[tip].y < landmarks[pip].y - 0.025) {
+        extended++;
+      }
+    }
+    return extended === 3;
   }
   function startGestureDetection() {
     if (!window.Hands) {
